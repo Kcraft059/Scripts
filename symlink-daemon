@@ -1,0 +1,114 @@
+#!/bin/bash
+
+tracefilename=".lnkdfiles.txt"
+transferkeyword="pspl"
+
+mktracefile(){
+    if [[ ! -e "$destination$1" ]]; then touch "$destination$1" ;xattr -s -w origindir "$origin" "$destination$1" ; fi
+}
+
+updatefiles(){
+    local file
+    if [[ $2 != '' ]] ;then
+        ln -s "$2" "$destination"
+        xattr -s -w origin "$2" "$destination${2##*/}"
+        echo $2 >> "$destination$1"
+    else
+    for file in "$origin"* "$origin".* ; do
+        if ! grep -q "$file" "$destination$1" && [[ ! -e "$destination${file##*/}" ]] && [[ "$file" != "$origin.." && "$file" != "$origin." && "$file" != "$origin.DS_Store" && "$file" != "$origin*" ]]; then
+            echo ${file##*/}
+            ln -s "$file" "$destination"
+            xattr -s -w origin "$file" "$destination${file##*/}"
+            echo $file >> "$destination$1" 
+        fi 
+    done
+    fi
+}
+
+transferfiles(){
+    local file ; local filename
+    for file in "$destination"* "$destination".* ; do
+        filename=${file##*/}
+        if [[ "$filename" != ".." && "$filename" != "." && "$filename" != ".DS_Store" && "$filename" != "$2" && "$filename" != "*" ]] ;then
+            if [[ ${filename##*.} == "$1" ]] ;then
+                if xattr -s -p origin "$file" ;then
+                    fileorigin=$(xattr -s -p origin "$file")
+                    echo 'Pull' $file from $fileorigin
+                    rm -rf "$file"
+                    mv "$fileorigin" "$destination${filename%.*}" 
+                    escaped_pattern=$(echo "$origin${filename%.*}" | sed 's/[\/&]/\\&/g') 
+                    sed -i '' "/^${escaped_pattern}$/d" "$destination$2" ; xattr -s -w origindir "$origin" "$destination$2"
+                else
+                    echo 'Push' $file to "$origin${filename%.*}"
+                    mv "$file" "$origin${filename%.*}"
+                    updatefiles "$2" "$origin${filename%.*}"
+                fi
+            fi
+        fi 
+    done
+}
+
+rmrnfile(){
+    skipdel=false ; local file
+    for file in "$destination"* "$destination".* ; do
+        filename=${file##*/}
+        if [[ "$filename" != ".." && "$filename" != "." && "$filename" != ".DS_Store" && "$filename" != "$2" && "$filename" != "*" ]] ;then
+            if [[ $(xattr -s -p origin "$file") == "$origin${1##*/}" ]] ; then
+                echo 'Rename' "$origin${1##*/}" to "$origin${file##*/}"
+                escaped_pattern=$(echo "$origin${1##*/}" | sed 's/[\/&]/\\&/g') 
+                sed -i '' "/^${escaped_pattern}$/d" "$destination$2" ; xattr -s -w origindir "$origin" "$destination$2"
+                rm -rf "$destination${file##*/}" 
+                mv "$origin${1##*/}" "$origin${file##*/}"
+                updatefiles "$2" "$origin${file##*/}"
+                skipdel=true
+            fi
+        fi 
+    done
+    if ! $skipdel ; then 
+        echo 'Del' "$origin${1##*/}" 
+        escaped_pattern=$(echo "$origin${1##*/}" | sed 's/[\/&]/\\&/g') 
+        sed -i '' "/^${escaped_pattern}$/d" "$destination$2" ; xattr -s -w origindir "$origin" "$destination$2"
+        rm -rf "$origin${1##*/}"
+    fi
+}
+
+while true ; do
+if ps -o user= -p $(pgrep loginwindow) && [[ $(ps -o user= -p $(pgrep loginwindow)) != "root" ]] ; then
+
+    CurUSER=$(ps -o user= -p $(pgrep loginwindow))
+
+    for i in /Volumes/*/* /Volumes/*/.* ; do
+
+        if [[ ${i##*/} == '.smlk-conf.json' ]]; then
+
+            json=$(< "$i")
+            length=$(echo $json | jq '.paths | length')
+
+            for j in $(seq 0 $((length-1))); do
+
+                origin=$(echo "$json" | jq -r '.paths['$j'].orig' | sed "s%{vol}%${i%/*}%g" | sed "s% %\\ %g")
+                destination=$(echo "$json" | jq -r  '.paths['$j'].dest' | sed "s%{usr}%/Users/$CurUSER%g" | sed "s% %\\ %g")
+    
+                mktracefile "$tracefilename"
+
+                updatefiles "$tracefilename"
+                
+                transferfiles "$transferkeyword" "$tracefilename"
+    
+                while IFS= read -r lnkdfile; do
+
+                    if [[ ! -e "$destination${lnkdfile##*/}" ]]; then
+                        rmrnfile "$lnkdfile" "$tracefilename"
+                    fi
+
+                done < "$destination$tracefilename"
+                
+                if [[ ! -e $(xattr -s -p "origindir" "$destination$tracefilename") ]] ;then echo Deleted .$tracefilename ; rm "$destination$tracefilename" ;fi
+
+            done
+        fi
+    done
+else 
+    rm /private/var/log/symlink-daemon.log
+fi
+done
