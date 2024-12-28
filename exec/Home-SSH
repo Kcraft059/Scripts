@@ -1,2 +1,1 @@
-ssh -i /Users/camille/Documents/Credentials/SSH-keys/ssh_key camille@81.66.136.167
-
+ssh -i /Users/camille/Documents/Credentials/SSH-keys/ssh_key camille@81.66.136.167 ;exit
