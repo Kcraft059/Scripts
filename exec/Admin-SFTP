@@ -1,1 +1,7 @@
-sshfs server@81.66.136.167:/ /Volumes/Root-SFTP -o identityFile=/Users/camille/Documents/Credentials/SSH-keys/ssh_key -o reconnect -o volname="Server - SFTP";exit
+#!/bin/bash
+sshfs server@81.66.136.167:/ /Volumes/Root-SFTP \
+    -o identityFile=/Users/camille/Documents/Credentials/SSH-keys/ssh_key \
+    -o reconnect \
+    -o volname="Server - SFTP" \
+    -o volicon="$(dirname "$(realpath "$0")")/.icon.icns" 
+exit
