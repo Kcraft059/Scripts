@@ -1,7 +1,7 @@
 #!/bin/bash
 sshfs camille@81.66.136.167: /Volumes/Home-SFTP \
     -o identityFile=/Users/camille/Documents/Credentials/SSH-keys/ssh_key \
-    -o reconnect \
+    -o reconnect,ServerAliveInterval=15,ServerAliveCountMax=10 \
     -o volname="Camille - SFTP" \
-    -o volicon="$(dirname "$(realpath "$0")")/.icon.icns" 
+    -o volicon="$(dirname "$(realpath "$0")")/.icon.icns"
 exit

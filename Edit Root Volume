@@ -1,0 +1,70 @@
+#!/bin/bash
+
+mtn_path=~/livemount
+snapshot_disk=$(diskutil list | grep 'com.apple.os' | awk '{print $7}')
+parent_disk=$(echo $snapshot_disk | sed 's/s[0-9]*$//')
+
+
+unmount_disk(){
+    echo "Unmounting disk..."
+    sudo umount $mtn_path/ # Unmounts disk
+    success=$?
+    if [[ "$success" = "0" ]]; then # Remove mouting point if unmount sucessfull 
+        echo "Removing dir $mtn_path/..."
+        rm -rf $mtn_path/
+    else
+        echo "\\nList of processes on $mtn_path/ :"
+        lsof /dev/$parent_disk
+        echo "\\n/!\ - An Error Occured: $mtn_path wasn't unmounted nor removed.\\n[?] - Do you want to try kill all disk related processes and retry? (y/n) "
+        read var
+        if [[ "$var" == "y" ]]; then
+            echo "Trying to kill all related processes..."
+            lsof /dev/$parent_disk | awk 'NR>1 {print $2}' | xargs kill -9
+            unmount_disk
+        fi
+    fi
+}
+
+mount_disk(){
+    mkdir $mtn_path # Create Mounting point
+    echo "Attempting to mount $parent_disk to $mtn_path."
+    sudo mount -o -nobrowse -t apfs /dev/$parent_disk $mtn_path/ # Mounts root volume to mount point
+    #give_ownership # Really extremely bad idea...
+}
+
+give_ownership(){
+    echo "[?] - Do you want to open a separate Terminal window to give $USER the ownership of $mtn_path ? (y/n) "
+    read var
+    if [[ "$var" == "y" ]]; then
+        echo "Giving ownership of $mtn_path to $USER..."
+        osascript -e "tell application \"Terminal\" to do script \"clear; echo Giving ownership of $mtn_path to $USER; sudo chown -R $USER $mtn_path; exit \""
+    fi
+}
+
+clear
+mount_disk
+open $mtn_path/
+
+echo "[?] - Update changes ? (y/n) "
+read var
+if [[ "$var" == "y" ]]; then
+    echo "Snapshot $snapshot_disk updated from $mtn_path/."
+    sudo bless --folder $mtn_path/System/Library/CoreServices --bootefi --create-snapshot
+    echo "[?] - Reboot to apply changes? (y/n) "
+    read var
+    if [[ "$var" == "y" ]]; then
+        echo "Rebooting..."
+        unmount_disk
+        sudo reboot
+    elif [[ "$var" == "n" ]]; then
+        echo "Rebooting aborted."
+        unmount_disk
+    fi
+elif [[ "$var" == "n" ]]; then
+    echo "Not updated."
+    unmount_disk 
+else
+    exit
+fi
+echo "Task completed, press enter to quit."
+read t
