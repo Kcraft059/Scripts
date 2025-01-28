@@ -52,27 +52,27 @@ clear
 printf "#CAUTION /!\: This program is experimental run it at your own risks.\n#Errors in the programm or misuse could entirely detstroy your MacOS instance\n\nDo you wish to proceed ? (y/n)"
 read var
 if [[ "$var" == "y" ]]; then
-    #mount_disk
+    mount_disk
     open $mtn_path/
 
     echo "[?] - Update changes ? (y/n) : "
     read var
     if [[ "$var" == "y" ]]; then
         printf "Snapshot $snapshot_disk updated from $mtn_path/.\n"
-        #sudo bless --mount $mtn_path/System/Library/CoreServices --bootefi --create-snapshot
+        sudo bless --mount $mtn_path/System/Library/CoreServices --bootefi --create-snapshot
         printf "[?] - Reboot to apply changes? (y/n) : "
         read var
         if [[ "$var" == "y" ]]; then
             printf "Rebooting...\n"
-            #unmount_disk
-            #sudo reboot
+            unmount_disk
+            sudo reboot
         elif [[ "$var" == "n" ]]; then
             printf "Rebooting aborted.\n"
-            #unmount_disk
+            unmount_disk
         fi
     elif [[ "$var" == "n" ]]; then
         printf "Not updated.\n"
-        #unmount_disk 
+        unmount_disk 
     else
         exit
     fi
