@@ -1,9 +1,15 @@
 #!/bin/bash
 
+#run in recovery csrutil disable
+#run in recovery csrutil authenticated-root disable 
+#on apple intel sudo bless -folder instead of -mount
+
 mtn_path=~/livemount
-snapshot_disk=$(diskutil list | grep 'com.apple.os' | awk '{print $7}')
+snapshot_disk=$(mount | grep sealed | grep 'on / ' | awk '{print $1}')
 parent_disk=$(echo $snapshot_disk | sed 's/s[0-9]*$//')
 
+echo $snapshot_disk
+echo $parent_disk
 
 unmount_disk(){
     echo "Unmounting disk..."
@@ -14,12 +20,12 @@ unmount_disk(){
         rm -rf $mtn_path/
     else
         echo "\\nList of processes on $mtn_path/ :"
-        lsof /dev/$parent_disk
+        lsof $parent_disk
         echo "\\n/!\ - An Error Occured: $mtn_path wasn't unmounted nor removed.\\n[?] - Do you want to try kill all disk related processes and retry? (y/n) "
         read var
         if [[ "$var" == "y" ]]; then
             echo "Trying to kill all related processes..."
-            lsof /dev/$parent_disk | awk 'NR>1 {print $2}' | xargs kill -9
+            lsof $parent_disk | awk 'NR>1 {print $2}' | xargs kill -9
             unmount_disk
         fi
     fi
@@ -28,7 +34,7 @@ unmount_disk(){
 mount_disk(){
     mkdir $mtn_path # Create Mounting point
     echo "Attempting to mount $parent_disk to $mtn_path."
-    sudo mount -o -nobrowse -t apfs /dev/$parent_disk $mtn_path/ # Mounts root volume to mount point
+    sudo mount -o -nobrowse -t apfs $parent_disk $mtn_path/ # Mounts root volume to mount point
     #give_ownership # Really extremely bad idea...
 }
 
@@ -49,7 +55,7 @@ echo "[?] - Update changes ? (y/n) "
 read var
 if [[ "$var" == "y" ]]; then
     echo "Snapshot $snapshot_disk updated from $mtn_path/."
-    sudo bless --folder $mtn_path/System/Library/CoreServices --bootefi --create-snapshot
+    sudo bless --mount $mtn_path/System/Library/CoreServices --bootefi --create-snapshot
     echo "[?] - Reboot to apply changes? (y/n) "
     read var
     if [[ "$var" == "y" ]]; then
