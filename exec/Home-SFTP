@@ -1,5 +1,5 @@
 #!/bin/bash
-sshfs camille@81.66.136.167: /Volumes/Home-SFTP \
+sshfs camille@ftnetwork.duckdns.org: /Volumes/Home-SFTP \
     -o identityFile=/Users/camille/Documents/Credentials/SSH-keys/ssh_key \
     -o reconnect,ServerAliveInterval=15,ServerAliveCountMax=10 \
     -o volname="Camille - SFTP" \

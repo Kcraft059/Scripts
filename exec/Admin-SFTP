@@ -1,5 +1,5 @@
 #!/bin/bash
-sshfs server@81.66.136.167:/ /Volumes/Root-SFTP \
+sshfs server@ftnetwork.duckdns.org:/ /Volumes/Root-SFTP \
     -o identityFile=/Users/camille/Documents/Credentials/SSH-keys/ssh_key \
     -o reconnect,ServerAliveInterval=15,ServerAliveCountMax=10 \
     -o volname="Server - SFTP" \

@@ -1,30 +1,28 @@
 #!/bin/bash
 
-#run in recovery csrutil disable
-#run in recovery csrutil authenticated-root disable 
-#on apple intel sudo bless --folder instead of --mount
+# Run in recovery `csrutil disable`
+# Run in recovery `csrutil authenticated-root disable`
+# On apple intel `sudo bless --folder instead of --mount`
 
 mtn_path=~/livemount
 snapshot_disk=$(mount | grep sealed | grep 'on / ' | awk '{print $1}')
 parent_disk=$(echo $snapshot_disk | sed 's/s[0-9]*$//')
 
-echo $snapshot_disk
-echo $parent_disk
-
 unmount_disk(){
-    echo "Unmounting disk..."
+    echo -e "$sexc - Unmounting disk..."
     sudo umount $mtn_path/ # Unmounts disk
     success=$?
     if [[ "$success" = "0" ]]; then # Remove mouting point if unmount sucessfull 
-        echo "Removing dir $mtn_path/..."
+        echo -e "$sexc - Removing dir $mtn_path/..."
         rm -rf $mtn_path/
     else
-        printf "\nList of processes on $mtn_path/ :\n"
+        echo -e "$swrn - An Error Occured: $mtn_path wasn't unmounted nor removed."
+        echo -e "$swrn - List of processes on $mtn_path/ :"
         lsof $parent_disk
-        printf "\n/!\ - An Error Occured: $mtn_path wasn't unmounted nor removed.\n[?] - Do you want to try kill all disk related processes and retry? (y/n) : "
-        read var
+        echo -e "$sqes - Do you want to try kill all disk related processes and retry? $syon"
+        echo -ne "$spmt"; read var; echo -ne "\033[0m"
         if [[ "$var" == "y" ]]; then
-            printf "Trying to kill all related processes...\n"
+            echo -e "$sexc - Trying to kill all related processes..."
             lsof $parent_disk | awk 'NR>1 {print $2}' | xargs kill -9
             unmount_disk
         fi
@@ -33,13 +31,36 @@ unmount_disk(){
 
 mount_disk(){
     mkdir $mtn_path # Create Mounting point
-    printf "Attempting to mount $parent_disk to $mtn_path.\n"
+    echo -e "$smak - Attempting to mount \033[38;5;4;48;5;0;1m$parent_disk\033[0m \033[38;5;6mto \033[38;5;4;48;5;0;1m$mtn_path\033[0m."
     sudo mount -o -nobrowse -t apfs $parent_disk $mtn_path/ # Mounts root volume to mount point
     #give_ownership # Really extremely bad idea...
 }
 
+#==== Styling ====
+
+spmt='\033[38;5;5;1m> \033[0m\033[48;5;0m' # >_
+sqes='\033[48;5;0;38;5;8m[\033[38;5;4m?\033[38;5;8m]\033[0m' # [?]
+scac='\033[48;5;0;38;5;8m[\033[38;5;1mx\033[38;5;8m]\033[0m' # [x]
+sexc='\033[48;5;0;38;5;8m[\033[38;5;2mo\033[38;5;8m]\033[0m' # [o]
+smak='\033[48;5;0;38;5;8m[\033[38;5;5m+\033[38;5;8m]\033[0m' # [+]
+swrn='\033[48;5;0;38;5;8m[\033[38;5;3m!\033[38;5;8m]\033[0m' # [!]
+syon='(\033[38;5;2;1my\033[38;5;0m/\033[38;5;1;1mn\033[0m)' # (y/n)
+
+brkline() {
+    col=$(( $(tput cols) - 1 ))
+    for i in $(seq 0 $col); do
+        if [[ $i == 0 ]]; then
+        echo -ne "$1\033[0m"
+        elif [[ $i == $col ]]; then
+        echo -ne "$3\033[0m"
+        else
+        echo -ne "$2\033[0m"
+        fi
+    done
+}
+
 #give_ownership(){
-#    printf "[?] - Do you want to open a separate Terminal window to give $USER the ownership of $mtn_path ? (y/n) : "
+#    echo -e "$sqes - Do you want to open a separate Terminal window to give $USER the ownership of $mtn_path ? (y/n) : "
 #    read var
 #    if [[ "$var" == "y" ]]; then
 #        echo "Giving ownership of $mtn_path to $USER..."
@@ -47,35 +68,50 @@ mount_disk(){
 #    fi
 #}
 
-clear
-
-printf "#CAUTION /!\: This program is experimental run it at your own risks.\n#Errors in the programm or misuse could entirely detstroy your MacOS instance\n\nDo you wish to proceed ? (y/n)"
-read var
+brkline '\033[38;5;4m>' '\033[38;5;4m-' '\033[38;5;4m<'
+echo -e "\033[38;5;1m\033[48;5;0;1mCAUTION /!\\ \033[0m: \033[38;5;3;1mThis program is experimental run it at your own risks."
+echo -e "Errors in the programm or misuse could entirely detstroy your MacOS instance\033[0m"
+brkline '\033[38;5;4m>' '\033[38;5;4m-' '\033[38;5;4m<'
+echo -e "$sqes - Do you wish to proceed ? $syon"
+echo -ne "$spmt"; read var; echo -ne "\033[0m"
 if [[ "$var" == "y" ]]; then
     mount_disk
     open $mtn_path/
 
-    echo "[?] - Update changes ? (y/n) : "
-    read var
+    echo -e "$sqes - Update changes ? $syon"
+    echo -ne "$spmt"; read var; echo -ne "\033[0m"
     if [[ "$var" == "y" ]]; then
-        printf "Snapshot $snapshot_disk updated from $mtn_path/.\n"
+
+        echo -e "$smak - Snapshot \033[38;5;4;48;5;0;1m$snapshot_disk\033[0m updated \033[38;5;6mfrom \033[38;5;4;48;5;0;1m$mtn_path/\033[0m."
+
         sudo bless --mount $mtn_path/System/Library/CoreServices --bootefi --create-snapshot
-        printf "[?] - Reboot to apply changes? (y/n) : "
-        read var
+
+        echo -e "$sqes - Reboot to apply changes? $syon"
+        echo -ne "$spmt"; read var; echo -ne "\033[0m"
+
         if [[ "$var" == "y" ]]; then
-            printf "Rebooting...\n"
+
             unmount_disk
+
+            echo -e "$sexc - Rebooting..."
             sudo reboot
+
         elif [[ "$var" == "n" ]]; then
-            printf "Rebooting aborted.\n"
+
+            echo -e "$scac - Rebooting aborted."
+
             unmount_disk
+
         fi
     elif [[ "$var" == "n" ]]; then
-        printf "Not updated.\n"
+
+        echo -e "$scac - Not updated."
+
         unmount_disk 
+
     else
         exit
     fi
 fi
-printf "Task completed, press enter to quit."
+echo -ne "$sexc - Task completed, press \033[38;5;5;1menter\033[0m to \033[38;5;1;1mquit\033[0m."
 read t
