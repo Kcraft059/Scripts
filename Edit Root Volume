@@ -6,6 +6,7 @@
 # 
 # `diskutil apfs listSnapshots <mounted_root_volume>` to list all snapshots made for the volume once mounted.
 # mount_apfs -o ro -s <snapshot_name> <mounted_root_volume> <snapshot_mount_point> to browse any snapshot
+# diskutil apfs deleteSnapshot <mounted_root_volume> -name <snapshot_name>
 # `sudo bless --mount ~/livemount --snapshotname <snapshot_name> --setBoot` to revert to any snapshot
 
 mtn_path=~/livemount
