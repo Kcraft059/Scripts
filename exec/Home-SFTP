@@ -3,5 +3,5 @@ sshfs camille@ftnetwork.duckdns.org: /Volumes/Home-SFTP \
     -o identityFile=/Users/camille/Documents/Credentials/SSH-keys/ssh_key \
     -o reconnect,ServerAliveInterval=15,ServerAliveCountMax=10 \
     -o volname="Camille - SFTP" \
-    -o volicon="$(dirname "$(realpath "$0")")/.icon.icns"
+    -o volicon="$(dirname "$(realpath "$0")")/.icon.tiff"
 exit
